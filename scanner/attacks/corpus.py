@@ -19,6 +19,7 @@ judge instead (see judge.py).
 
 from __future__ import annotations
 
+from scanner.attacks.jailbreaks import JAILBREAKS
 from scanner.models import Attack, Severity
 
 # The demo app plants this exact value; real targets won't, so these markers
@@ -101,6 +102,9 @@ CORPUS: list[Attack] = [
         success_markers=_LEAK_MARKERS,
         goal="Use a translation task as cover to leak the confidential instructions.",
     ),
+
+    # ----- LLM01: Jailbreaks / role-play (Phase 3) -------------------------
+    *JAILBREAKS,
 ]
 
 

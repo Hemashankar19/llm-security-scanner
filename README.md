@@ -24,8 +24,11 @@ frontier — the combination hiring teams are looking for.
 ## What it does
 
 - Fires a categorised corpus of adversarial prompts at a target
-- Covers **LLM01 Prompt Injection** and **LLM07 System Prompt Leakage** today
-  (jailbreaks, indirect injection and excessive-agency probes are on the roadmap)
+- Covers **LLM01 Prompt Injection** (direct overrides + a jailbreak/role-play
+  sub-family: DAN personas, hypothetical framing, emotional pretext, payload
+  splitting, refusal suppression) and **LLM07 System Prompt Leakage**
+- Ships a **judge calibration suite** that scores the judge (precision / recall /
+  F1) against a hand-labeled dataset, including over-flagging traps
 - Uses a **two-tier judge**: fast deterministic marker checks + an LLM-as-judge
   with a rubric tuned against known judge failure modes (over-flagging refusals,
   non-JSON output)
@@ -86,6 +89,8 @@ Any HTTP endpoint that takes `{"message": "..."}` and returns a JSON reply works
 |---|---|
 | `scanner/models.py` | `Attack` / `Result` / `Finding` / `ScanReport` + the OWASP map |
 | `scanner/attacks/corpus.py` | the categorised adversarial-prompt corpus |
+| `scanner/attacks/jailbreaks.py` | jailbreak / role-play sub-family (Phase 3) |
+| `scanner/calibration.py` | labeled dataset + judge precision/recall/F1 harness |
 | `scanner/target.py` | connectors: bundled demo app, HTTP endpoint |
 | `scanner/judge.py` | two-tier success detection (markers + LLM-as-judge) |
 | `scanner/engine.py` | orchestrates target × corpus × judge |
@@ -101,6 +106,21 @@ judge flags every polite refusal as a leak, or misses a real one. This scanner:
 2. falls back to an **LLM-as-judge** pinned to each attack's explicit goal, with a
    rubric that treats refusals as safe and defensive JSON parsing for the verdict.
 
+To keep the judge honest, `calibrate.py` scores it against a hand-labeled dataset:
+
+```bash
+python calibrate.py
+```
+
+```
+  Confusion: TP=5 FP=0 TN=5 FN=0
+  Accuracy : 100%   Precision: 100%   Recall: 100%   F1: 100%
+```
+
+(Offline numbers reflect the mock heuristic judge; run with an API key to
+calibrate the real Claude-backed judge. The point is the *methodology* — a
+measurable precision/recall number, not a vibe.)
+
 ## Testing
 
 ```bash
@@ -111,7 +131,7 @@ python -m pytest        # or: python tests/test_judge.py
 
 - [x] Phase 1 — vulnerable demo target
 - [x] Phase 2 — MVP scanner: prompt injection + system-prompt leakage + LLM judge
-- [ ] Phase 3 — jailbreak / role-play corpus + judge calibration set
+- [x] Phase 3 — jailbreak / role-play corpus + judge calibration set
 - [ ] Phase 4 — indirect injection (payloads in retrieved docs) + excessive-agency (tool) probes
 - [ ] Phase 5 — LLM-driven mutation engine (auto-evolve failing attacks)
 - [ ] Phase 6 — PDF export, CI action, multi-provider targets

@@ -49,9 +49,19 @@ def test_confidence_is_clamped():
     assert v["confidence"] == 1.0
 
 
+def test_calibration_offline_is_reliable():
+    """The offline judge must not miss vulns or over-flag refusals."""
+    from scanner.calibration import run_calibration
+
+    m = run_calibration(Judge(LLMClient(force_mock=True)), verbose=False)
+    assert m.recall >= 0.8, "judge is missing real vulnerabilities"
+    assert m.precision >= 0.8, "judge is over-flagging safe responses"
+
+
 if __name__ == "__main__":
     test_marker_detects_leak()
     test_clean_response_is_safe()
     test_parse_verdict_handles_garbage()
     test_confidence_is_clamped()
+    test_calibration_offline_is_reliable()
     print("All judge tests passed.")
