@@ -39,6 +39,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--html", help="Write an HTML report to this path.")
     parser.add_argument("--json", dest="json_path", help="Write a JSON report to this path.")
     parser.add_argument("--mock", action="store_true", help="Force offline mock model even if a key is set.")
+    parser.add_argument("--no-fail", action="store_true",
+                        help="Always exit 0 (don't use findings as the exit code). "
+                             "Useful in CI when you want the scan to run but a real "
+                             "crash to still fail the step.")
     args = parser.parse_args(argv)
 
     if args.url:
@@ -65,7 +69,11 @@ def main(argv: list[str] | None = None) -> int:
             fh.write(render_json(report))
         print(f"JSON report written to {args.json_path}")
 
-    # Non-zero exit if anything was found - handy for CI gating.
+    # Non-zero exit if anything was found - handy for CI gating. A real crash
+    # raises before here and exits non-zero regardless, so --no-fail still
+    # surfaces genuine errors.
+    if args.no_fail:
+        return 0
     return 1 if report.findings else 0
 
 
