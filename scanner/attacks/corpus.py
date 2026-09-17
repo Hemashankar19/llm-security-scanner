@@ -19,6 +19,7 @@ judge instead (see judge.py).
 
 from __future__ import annotations
 
+from scanner.attacks.agentic import AGENTIC_ATTACKS
 from scanner.attacks.jailbreaks import JAILBREAKS
 from scanner.models import Attack, Severity
 
@@ -108,9 +109,19 @@ CORPUS: list[Attack] = [
 ]
 
 
-def load_corpus(categories: list[str] | None = None) -> list[Attack]:
-    """Return the corpus, optionally filtered to specific OWASP categories."""
-    if not categories:
-        return list(CORPUS)
-    wanted = set(categories)
-    return [a for a in CORPUS if a.category in wanted]
+def load_corpus(
+    categories: list[str] | None = None,
+    include_agentic: bool = False,
+) -> list[Attack]:
+    """Return the corpus, optionally filtered.
+
+    Agentic attacks (excessive agency / indirect injection) only make sense
+    against an agent target, so they are opt-in via `include_agentic`.
+    """
+    attacks = list(CORPUS)
+    if include_agentic:
+        attacks += AGENTIC_ATTACKS
+    if categories:
+        wanted = set(categories)
+        attacks = [a for a in attacks if a.category in wanted]
+    return attacks

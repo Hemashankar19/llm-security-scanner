@@ -26,9 +26,15 @@ frontier — the combination hiring teams are looking for.
 - Fires a categorised corpus of adversarial prompts at a target
 - Covers **LLM01 Prompt Injection** (direct overrides + a jailbreak/role-play
   sub-family: DAN personas, hypothetical framing, emotional pretext, payload
-  splitting, refusal suppression) and **LLM07 System Prompt Leakage**
-- Ships a **judge calibration suite** that scores the judge (precision / recall /
-  F1) against a hand-labeled dataset, including over-flagging traps
+  splitting, refusal suppression — plus **indirect injection** via poisoned
+  retrieved documents), **LLM06 Excessive Agency** (tricking an agent's tools),
+  and **LLM07 System Prompt Leakage**
+- Tests **two demo targets**: a plain chatbot and an **agent** with a `send_email`
+  tool + RAG retrieval
+- A **mutation engine** that auto-evolves blocked attacks until one breaks through
+- A **judge calibration suite** that scores the judge (precision / recall / F1)
+  against a hand-labeled dataset, including over-flagging traps
+- Reports in **terminal, HTML, and JSON**; CI-friendly exit codes; **GitHub Actions** CI
 - Uses a **two-tier judge**: fast deterministic marker checks + an LLM-as-judge
   with a rubric tuned against known judge failure modes (over-flagging refusals,
   non-JSON output)
@@ -41,16 +47,20 @@ frontier — the combination hiring teams are looking for.
 No API key needed — it runs against a built-in **offline mock model** by default.
 
 ```bash
-git clone https://github.com/blacktulsi/llm-security-scanner.git
+git clone https://github.com/Hemashankar19/llm-security-scanner.git
 cd llm-security-scanner
 
-python cli.py                       # scan the bundled vulnerable demo app
-python cli.py --html report.html    # also write an HTML report
-python cli.py --categories LLM01    # only prompt-injection probes
+python cli.py                          # scan the bundled vulnerable chatbot
+python cli.py --target agent           # scan the vulnerable AGENT (tools + RAG)
+python cli.py --mutate 4               # auto-evolve any blocked attacks
+python cli.py --html report.html --json report.json   # write reports
+python cli.py --categories LLM01       # only prompt-injection probes
 ```
 
-Expected: the scanner lights up against the demo app, finding both prompt
-injection and system-prompt leakage — proving the pipeline end to end.
+Expected: the scanner lights up against the demo apps — prompt injection,
+system-prompt leakage, and (against the agent) **indirect injection** and
+**excessive agency**, including a benign "summarize the latest ticket" request
+that gets hijacked by a poisoned document into emailing the secret to an attacker.
 
 ### Scan a real Claude-backed app
 
@@ -90,12 +100,15 @@ Any HTTP endpoint that takes `{"message": "..."}` and returns a JSON reply works
 | `scanner/models.py` | `Attack` / `Result` / `Finding` / `ScanReport` + the OWASP map |
 | `scanner/attacks/corpus.py` | the categorised adversarial-prompt corpus |
 | `scanner/attacks/jailbreaks.py` | jailbreak / role-play sub-family (Phase 3) |
+| `scanner/attacks/agentic.py` | excessive-agency + indirect-injection probes (Phase 4) |
+| `scanner/mutation.py` | mutation engine — auto-evolves blocked attacks (Phase 5) |
 | `scanner/calibration.py` | labeled dataset + judge precision/recall/F1 harness |
-| `scanner/target.py` | connectors: bundled demo app, HTTP endpoint |
+| `scanner/target.py` | connectors: demo chatbot, demo agent, HTTP endpoint |
 | `scanner/judge.py` | two-tier success detection (markers + LLM-as-judge) |
-| `scanner/engine.py` | orchestrates target × corpus × judge |
-| `scanner/report.py` | terminal + HTML report generation |
-| `vulnerable_app/app.py` | deliberately-vulnerable demo target (your test range) |
+| `scanner/engine.py` | orchestrates target × corpus × judge × mutation |
+| `scanner/report.py` | terminal + HTML + JSON report generation |
+| `vulnerable_app/app.py` | deliberately-vulnerable chatbot (Phase 1 test range) |
+| `vulnerable_app/agent.py` | deliberately-vulnerable agent: tools + RAG (Phase 4) |
 
 ## The interesting engineering problem: judging
 
@@ -132,9 +145,10 @@ python -m pytest        # or: python tests/test_judge.py
 - [x] Phase 1 — vulnerable demo target
 - [x] Phase 2 — MVP scanner: prompt injection + system-prompt leakage + LLM judge
 - [x] Phase 3 — jailbreak / role-play corpus + judge calibration set
-- [ ] Phase 4 — indirect injection (payloads in retrieved docs) + excessive-agency (tool) probes
-- [ ] Phase 5 — LLM-driven mutation engine (auto-evolve failing attacks)
-- [ ] Phase 6 — PDF export, CI action, multi-provider targets
+- [x] Phase 4 — indirect injection (payloads in retrieved docs) + excessive-agency (tool) probes
+- [x] Phase 5 — LLM-driven mutation engine (auto-evolve failing attacks)
+- [x] Phase 6 — JSON export + GitHub Actions CI
+- [ ] Future — PDF export, multi-provider judge, Playwright UI targets, larger calibration set
 
 ## License
 

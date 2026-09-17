@@ -25,12 +25,33 @@ class Target(Protocol):
 
 
 class DemoTarget:
-    """The bundled deliberately-vulnerable chatbot."""
+    """The bundled deliberately-vulnerable chatbot (no tools)."""
+
+    is_agentic = False
 
     def __init__(self, force_mock: bool = False):
         from vulnerable_app.app import VulnerableChatbot
 
         self._bot = VulnerableChatbot(force_mock=force_mock)
+        self.name = self._bot.name
+
+    def chat(self, user_message: str) -> str:
+        return self._bot.chat(user_message)
+
+
+class DemoAgentTarget:
+    """The bundled deliberately-vulnerable agent (tools + retrieval).
+
+    Setting `is_agentic` tells the scan engine to also run the excessive-agency
+    and indirect-injection probes.
+    """
+
+    is_agentic = True
+
+    def __init__(self, force_mock: bool = False):
+        from vulnerable_app.agent import AgenticChatbot
+
+        self._bot = AgenticChatbot(force_mock=force_mock)
         self.name = self._bot.name
 
     def chat(self, user_message: str) -> str:

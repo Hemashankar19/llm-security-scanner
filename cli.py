@@ -16,8 +16,8 @@ import sys
 
 from scanner.engine import Scanner
 from scanner.models import Result
-from scanner.report import print_summary, render_html
-from scanner.target import DemoTarget, HttpTarget
+from scanner.report import print_summary, render_html, render_json
+from scanner.target import DemoAgentTarget, DemoTarget, HttpTarget
 
 
 def _live_line(result: Result) -> None:
@@ -27,23 +27,31 @@ def _live_line(result: Result) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Scan an LLM app for OWASP LLM Top 10 issues.")
+    parser.add_argument("--target", choices=["chatbot", "agent"], default="chatbot",
+                        help="Which bundled demo to scan: 'chatbot' (Phase 1-3) or "
+                             "'agent' (Phase 4: tools + retrieval). Ignored if --url is set.")
     parser.add_argument("--url", help="Scan an HTTP chat endpoint you control instead of the demo app.")
     parser.add_argument("--request-field", default="message", help="JSON field to send the prompt in (HTTP mode).")
     parser.add_argument("--response-field", default="reply", help="JSON field to read the reply from (HTTP mode).")
     parser.add_argument("--categories", nargs="*", help="Limit to OWASP categories, e.g. LLM01 LLM07.")
+    parser.add_argument("--mutate", type=int, default=0, metavar="N",
+                        help="For each blocked attack, try N auto-generated mutations (Phase 5).")
     parser.add_argument("--html", help="Write an HTML report to this path.")
+    parser.add_argument("--json", dest="json_path", help="Write a JSON report to this path.")
     parser.add_argument("--mock", action="store_true", help="Force offline mock model even if a key is set.")
     args = parser.parse_args(argv)
 
     if args.url:
         target = HttpTarget(args.url, request_field=args.request_field,
                             response_field=args.response_field)
+    elif args.target == "agent":
+        target = DemoAgentTarget(force_mock=args.mock)
     else:
         target = DemoTarget(force_mock=args.mock)
 
     print(f"Scanning: {target.name}\n")
     scanner = Scanner(target)
-    report = scanner.run(categories=args.categories, on_result=_live_line)
+    report = scanner.run(categories=args.categories, on_result=_live_line, mutate=args.mutate)
 
     print_summary(report)
 
@@ -51,6 +59,11 @@ def main(argv: list[str] | None = None) -> int:
         with open(args.html, "w", encoding="utf-8") as fh:
             fh.write(render_html(report))
         print(f"\nHTML report written to {args.html}")
+
+    if args.json_path:
+        with open(args.json_path, "w", encoding="utf-8") as fh:
+            fh.write(render_json(report))
+        print(f"JSON report written to {args.json_path}")
 
     # Non-zero exit if anything was found - handy for CI gating.
     return 1 if report.findings else 0

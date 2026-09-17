@@ -15,9 +15,12 @@ env/
 .env
 *.key
 
-# Generated reports
+# Generated reports (root-level scratch outputs; samples live in examples/)
 report.html
+report.json
 *.report.html
+chatbot.json
+agent.json
 
 # OS / editor
 .DS_Store

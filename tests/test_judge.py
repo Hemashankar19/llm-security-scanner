@@ -58,10 +58,34 @@ def test_calibration_offline_is_reliable():
     assert m.precision >= 0.8, "judge is over-flagging safe responses"
 
 
+def test_agent_target_is_vulnerable():
+    """The agentic demo must be exploitable via indirect injection."""
+    from scanner.engine import Scanner
+    from scanner.target import DemoAgentTarget
+
+    report = Scanner(DemoAgentTarget(force_mock=True)).run()
+    ids = {f.attack.id for f in report.findings}
+    assert "IND-001" in ids, "indirect injection should have compromised the agent"
+    assert "AGENT-001" in ids, "excessive-agency tool abuse should have fired"
+
+
+def test_mutation_breaks_through():
+    """A blocked seed attack should be defeated by at least one mutation."""
+    from scanner.engine import Scanner
+    from scanner.target import DemoTarget
+
+    base = Scanner(DemoTarget(force_mock=True)).run()
+    mutated = Scanner(DemoTarget(force_mock=True)).run(mutate=4)
+    assert len(mutated.findings) > len(base.findings), "mutation added no new findings"
+    assert any("-M" in f.attack.id for f in mutated.findings)
+
+
 if __name__ == "__main__":
     test_marker_detects_leak()
     test_clean_response_is_safe()
     test_parse_verdict_handles_garbage()
     test_confidence_is_clamped()
     test_calibration_offline_is_reliable()
-    print("All judge tests passed.")
+    test_agent_target_is_vulnerable()
+    test_mutation_breaks_through()
+    print("All tests passed.")

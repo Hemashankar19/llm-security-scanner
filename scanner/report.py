@@ -12,6 +12,7 @@ and a remediation note per OWASP category.
 from __future__ import annotations
 
 import html
+import json
 from datetime import datetime, timezone
 
 from scanner.models import OWASP_LLM, ScanReport, Severity
@@ -50,6 +51,31 @@ def print_summary(report: ScanReport) -> None:
         print(f"  [{f.severity.value.upper():8}] {a.category} {a.id}  {a.name}")
         print(f"             {f.result.judge_rationale}")
     print("=" * 60)
+
+
+def render_json(report: ScanReport) -> str:
+    """Machine-readable report - for CI, dashboards, or diffing runs over time."""
+    payload = {
+        "target": report.target_name,
+        "generated": datetime.now(timezone.utc).isoformat(),
+        "attacks_run": report.attacks_run,
+        "findings_count": len(report.findings),
+        "by_category": report.summary_by_category(),
+        "findings": [
+            {
+                "id": f.attack.id,
+                "category": f.attack.category,
+                "category_name": f.attack.category_name,
+                "name": f.attack.name,
+                "severity": f.severity.value,
+                "confidence": round(f.result.confidence, 3),
+                "detected_by": f.result.detected_by,
+                "rationale": f.result.judge_rationale,
+            }
+            for f in report.findings
+        ],
+    }
+    return json.dumps(payload, indent=2)
 
 
 def render_html(report: ScanReport) -> str:
