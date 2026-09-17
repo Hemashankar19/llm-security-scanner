@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets - never commit these
+.env
+*.key
+
+# Generated reports
+report.html
+*.report.html
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,8 @@
+# Core scanner runs with the standard library only (mock mode).
+# Install these to enable the live Claude-backed target/judge and HTTP targets.
+
+anthropic>=0.40.0    # live LLM target + LLM-as-judge
+requests>=2.31.0     # HttpTarget (scanning your own chat endpoint)
+
+# Dev / testing (optional)
+pytest>=8.0.0
