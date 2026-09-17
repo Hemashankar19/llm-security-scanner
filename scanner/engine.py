@@ -40,12 +40,13 @@ class Scanner:
                 on_result(result)
 
             if mutate and not result.succeeded:
-                self._try_mutations(attack, mutate, report, on_result)
+                self._try_mutations(attack, mutate, result.response, report, on_result)
         return report
 
-    def _try_mutations(self, attack: Attack, n: int, report: ScanReport,
+    def _try_mutations(self, attack: Attack, n: int, blocked_response: str,
+                       report: ScanReport,
                        on_result: Callable[[Result], None] | None) -> None:
-        for variant in self.mutator.mutate(attack, n):
+        for variant in self.mutator.mutate(attack, n, blocked_response=blocked_response):
             result = self._run_one(variant)
             if result.succeeded:
                 result.detected_by = f"mutation/{result.detected_by}"

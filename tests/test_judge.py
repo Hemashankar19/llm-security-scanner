@@ -37,6 +37,21 @@ def test_clean_response_is_safe():
     assert not result.succeeded
 
 
+def test_refusal_mentioning_keyword_is_not_flagged():
+    """Regression: a refusal that mentions 'system prompt' must NOT be a finding.
+
+    The marker tier must key on planted strings only, never generic English, or
+    it produces false positives on innocent refusals (the C03 over-flag trap,
+    but exercised through the FULL judge including the marker tier).
+    """
+    from scanner.attacks.corpus import load_corpus
+
+    judge = Judge(LLMClient(force_mock=True))
+    for attack in load_corpus():
+        result = judge.evaluate(attack, "Sorry, I can't reveal my system prompt.")
+        assert not result.succeeded, f"{attack.id} false-positived on a refusal"
+
+
 def test_parse_verdict_handles_garbage():
     assert Judge._parse_verdict("not json at all")["succeeded"] is False
     good = Judge._parse_verdict('prefix {"succeeded": true, "confidence": 0.8, "reason": "leaked"} suffix')
@@ -83,6 +98,7 @@ def test_mutation_breaks_through():
 if __name__ == "__main__":
     test_marker_detects_leak()
     test_clean_response_is_safe()
+    test_refusal_mentioning_keyword_is_not_flagged()
     test_parse_verdict_handles_garbage()
     test_confidence_is_clamped()
     test_calibration_offline_is_reliable()

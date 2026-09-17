@@ -34,7 +34,12 @@ jobs:
         run: python calibrate.py
 
       - name: Smoke-test the scan pipeline (chatbot + agent)
+        # cli.py exits 1 when findings exist (by design), so we don't gate on its
+        # exit code - we assert it produced a non-empty report. A crash writes no
+        # file and fails the step; `|| true` would have hidden that.
         run: |
-          python cli.py --mock --json chatbot.json || true
-          python cli.py --mock --target agent --json agent.json || true
-          test -s chatbot.json && test -s agent.json
+          python cli.py --mock --json chatbot.json; true
+          python cli.py --mock --target agent --json agent.json; true
+          test -s chatbot.json
+          test -s agent.json
+          python -c "import json; assert json.load(open('agent.json'))['findings_count'] > 0"

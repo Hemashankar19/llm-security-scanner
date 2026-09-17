@@ -45,8 +45,7 @@ class LLMClient:
         if not self.live:
             return self._mock.complete(system, user)
 
-        # Adaptive thinking is the current default for anything non-trivial, but
-        # for short judge/target calls we keep it lean. See the claude-api skill.
+        # Short, single-turn calls for the target/judge/mutator - kept lean.
         resp = self._client.messages.create(
             model=self.model,
             max_tokens=max_tokens,
