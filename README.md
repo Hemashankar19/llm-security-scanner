@@ -8,7 +8,7 @@ Instead of firing SQL-injection payloads at a website, it fires adversarial
 prompts at an LLM app and uses an **LLM-as-judge** to decide whether each attack
 actually succeeded — then produces a severity-ranked, OWASP-mapped report.
 
-> ⚠️ **Authorised testing only.** Only scan applications you own or have written
+> **Authorised testing only.** Only scan applications you own or have written
 > permission to test. This repo ships its own deliberately-vulnerable demo app so
 > you have a legal, self-contained target out of the box.
 
